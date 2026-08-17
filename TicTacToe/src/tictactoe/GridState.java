@@ -1,6 +1,6 @@
 package tictactoe;
 
-public enum GridState {
+enum GridState {
     DRAW("Draw"),
     X("X wins"),
     O("O wins"),

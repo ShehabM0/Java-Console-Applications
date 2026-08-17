@@ -2,5 +2,6 @@ package tictactoe;
 
 enum Difficulty {
     EASY,
-    MEDIUM;
+    MEDIUM,
+    HARD;
 }

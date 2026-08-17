@@ -1,3 +1,3 @@
 package tictactoe;
 
-public record Cell(int x, int y) { }
+record Cell(int x, int y) { }

@@ -5,13 +5,12 @@ import java.util.Scanner;
 
 class HumanPlayer implements Player {
     private final Scanner scanner = new Scanner(System.in);
+    private final Grid grid;
+    private final int gridSize;
 
-    private final int GRID_SIZE;
-    private final CellType[][] grid;
-
-    HumanPlayer(CellType[][] grid) {
+    HumanPlayer(Grid grid) {
         this.grid = grid;
-        GRID_SIZE = grid.length;
+        this.gridSize = grid.getSize();
     }
 
     @Override
@@ -22,10 +21,10 @@ class HumanPlayer implements Player {
                 System.out.print("Enter the coordinates: ");
                 int row = scanner.nextInt() - 1, col = scanner.nextInt() - 1;
 
-                if(row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) {
-                    System.out.printf("Coordinates should be from 1 to %d!%n", GRID_SIZE);
+                if(row < 0 || row >= gridSize || col < 0 || col >= gridSize) {
+                    System.out.printf("Coordinates should be from 1 to %d!%n", gridSize);
                 }
-                else if(grid[row][col] != CellType.EMPTY) {
+                else if(grid.getCellType(row, col) != CellType.EMPTY) {
                     System.out.println("This cell is occupied! Choose another one!");
                 } else {
                     pickedCell = new Cell(row, col);
