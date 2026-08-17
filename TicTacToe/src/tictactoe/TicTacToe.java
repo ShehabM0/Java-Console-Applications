@@ -26,34 +26,29 @@ class TicTacToe {
     }
 
     void choosePlayers() {
-        String arg0 = "", arg1, arg2;
-        do {
+        while (true) {
             System.out.print("Input command: ");
-            String[] args = scanner.nextLine().split(" ");
+            String[] args = scanner.nextLine().trim().split("\\s+"); // consecutive spaces
 
             if(args.length == 1 && args[0].equalsIgnoreCase("exit")) {
-                arg0 = "exit";
-            } else if (args.length == 3) {
-                boolean valid = true;
-                for(int i = 1; i < 3; i++)
-                    if(!isValidPlayerType(args[i]))
-                        valid = false;
-                if(!valid) {
-                    System.out.println("Bad parameters!");
-                    continue;
-                }
-
-                // valid
-                arg1 = args[1]; arg2 = args[2];
-                PlayerType player1Type = getPlayerType(arg1), player2Type = getPlayerType(arg2);
-                Player player1 = createPlayer(player1Type), player2 = createPlayer(player2Type);
-                initGrid();
-                printGrid();
-                start(player1, player2);
-            } else {
-                System.out.println("Bad parameters!");
+                return;
             }
-        } while (!arg0.equalsIgnoreCase("exit"));
+            if (args.length != 3 || !args[0].equalsIgnoreCase("start")) {
+                System.out.println("Bad parameters!");
+                continue;
+            }
+            if(!isValidPlayerType(args[1]) || !isValidPlayerType(args[2])) {
+                System.out.println("BBad parameters!");
+                continue;
+            }
+
+            Player player1 = createPlayer(args[1], CellType.X);
+            Player player2 = createPlayer(args[2], CellType.O);
+
+            initGrid();
+            printGrid();
+            start(player1, player2);
+        }
     }
 
     void start(Player player1, Player player2) {
@@ -70,22 +65,28 @@ class TicTacToe {
         System.out.println(gridState.state());
     }
 
+    Player createPlayer(String playerType, CellType cellType) {
+        if (playerType.equalsIgnoreCase("user"))
+            return new HumanPlayer(grid);
+
+        Difficulty difficulty = getGameDifficulty(playerType);
+        return new BotPlayer(grid, cellType, difficulty);
+    }
+
+    // user & bot(easy, medium)
     boolean isValidPlayerType(String playerType) {
-        return playerType.equalsIgnoreCase("user") || playerType.equalsIgnoreCase("easy");
+        if(playerType.equalsIgnoreCase("user"))
+            return true;
+
+        for(Difficulty botDifficulty : Difficulty.values())
+            if(playerType.equalsIgnoreCase(botDifficulty.name()))
+                return true;
+
+        return false;
     }
 
-    PlayerType getPlayerType(String playerType) {
-        return switch (playerType) {
-            case "user" -> PlayerType.HUMAN;
-            default -> PlayerType.BOT;
-        };
-    }
-
-    Player createPlayer(PlayerType playerType) {
-        return switch (playerType) {
-            case HUMAN -> new HumanPlayer(grid);
-            case BOT -> new BotPlayer(grid);
-        };
+    Difficulty getGameDifficulty(String difficultyType) {
+        return difficultyType.equalsIgnoreCase(Difficulty.EASY.name()) ? Difficulty.EASY : Difficulty.MEDIUM;
     }
 
     void updateGridState() {
