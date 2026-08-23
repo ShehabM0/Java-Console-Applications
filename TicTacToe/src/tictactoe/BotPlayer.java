@@ -6,14 +6,14 @@ class BotPlayer implements Player {
     private final Grid grid;
     private final int gridSize;
 
-    private final CellType cellType, userCellType;
+    private final CellType botCellType, userCellType;
     private final Difficulty difficulty;
 
     BotPlayer(Grid grid, CellType cellType, Difficulty difficulty) {
         this.grid = grid;
         this.gridSize = grid.getSize();
 
-        this.cellType = cellType;
+        this.botCellType = cellType;
         this.userCellType = cellType == CellType.X ? CellType.O : CellType.X;
 
         this.difficulty = difficulty;
@@ -26,6 +26,7 @@ class BotPlayer implements Player {
             return makeOptimalMove();
         }
 
+        // One move ahead.
         if(difficulty == Difficulty.MEDIUM) {
             Cell pickedCell = makeWinningMove();
             if(pickedCell != null)
@@ -39,28 +40,21 @@ class BotPlayer implements Player {
         return makeRandomMove();
     }
 
-    public Cell makeRandomMove() {
-        List<Cell> availableCells = new ArrayList<>();
-        for (int i = 0; i < gridSize; i++)
-            for (int j = 0; j < gridSize; j++)
-                if (grid.isEmptyCell(i, j))
-                    availableCells.add(new Cell(i, j));
-
-        int availableCellsLen = availableCells.size();
-        int idx = new Random().nextInt(availableCellsLen);
-
-        return availableCells.get(idx);
+    private Cell makeRandomMove() {
+        List<Cell> emptyCells = grid.getEmptyCells();
+        int idx = new Random().nextInt(emptyCells.size());
+        return emptyCells.get(idx);
     }
 
-    public Cell makeWinningMove() {
+    private Cell makeWinningMove() {
         // row, col
         for (int i = 0; i < gridSize; i++) {
             int rowCnt = 0, colCnt = 0;
             int emptyRowCnt = 0, emptyColCnt = 0;
             Cell targetRowCell = null, targetColCell = null;
             for (int j = 0; j < gridSize; j++) {
-                rowCnt += grid.getCellType(i, j) == cellType ? 1 : 0;
-                colCnt += grid.getCellType(j, i) == cellType ? 1 : 0;
+                rowCnt += grid.getCellType(i, j) == botCellType ? 1 : 0;
+                colCnt += grid.getCellType(j, i) == botCellType ? 1 : 0;
 
                 if (grid.isEmptyCell(i, j)) {
                     emptyRowCnt++;
@@ -83,7 +77,7 @@ class BotPlayer implements Player {
         // main-diagonal
         int diagCnt = 0, emptyDiagCnt = 0;
         for (int k = 0; k < gridSize; k++) {
-            diagCnt += grid.getCellType(k, k) == cellType ? 1 : 0;
+            diagCnt += grid.getCellType(k, k) == botCellType ? 1 : 0;
 
             if (grid.isEmptyCell(k, k)) {
                 emptyDiagCnt++;
@@ -96,7 +90,7 @@ class BotPlayer implements Player {
         diagCnt = 0; emptyDiagCnt = 0;
         // anti-diagonal
         for (int i = 0, j = gridSize - 1; i < gridSize && j > -1; i++, j--) {
-            diagCnt += grid.getCellType(i, j) == cellType ? 1 : 0;
+            diagCnt += grid.getCellType(i, j) == botCellType ? 1 : 0;
 
             if (grid.isEmptyCell(i, j)) {
                 emptyDiagCnt++;
@@ -109,7 +103,7 @@ class BotPlayer implements Player {
         return null;
     }
 
-    public Cell makeBlockingMove() {
+    private Cell makeBlockingMove() {
         // row, col
         for (int i = 0; i < gridSize; i++) {
             int rowCnt = 0, colCnt = 0;
@@ -166,14 +160,14 @@ class BotPlayer implements Player {
         return null;
     }
 
-    public Cell makeOptimalMove() {
+    private Cell makeOptimalMove() {
         int bestScore = Integer.MIN_VALUE;
         Cell optimalCell = null;
 
         List<Cell> availableCells = grid.getEmptyCells();
         Collections.shuffle(availableCells);
         for(Cell cell : availableCells) {
-            grid.addCell(cell, cellType);
+            grid.addCell(cell, botCellType);
             int score = minimax(true);
             if(score > bestScore) {
                 bestScore = score;
@@ -185,11 +179,11 @@ class BotPlayer implements Player {
         return optimalCell;
     }
 
-    public int minimax(boolean userTurn) {
+    private int minimax(boolean userTurn) {
         if(grid.getState() == GridState.X)
-            return cellType == CellType.X ? 1 : -1;
+            return botCellType == CellType.X ? 1 : -1;
         if(grid.getState() == GridState.O)
-            return cellType == CellType.O ? 1 : -1;
+            return botCellType == CellType.O ? 1 : -1;
         if(grid.getState() == GridState.DRAW)
             return 0;
 
@@ -197,7 +191,7 @@ class BotPlayer implements Player {
         if(!userTurn) {
             int mx = Integer.MIN_VALUE;
             for(Cell cell : availableCells) {
-                grid.addCell(cell, cellType);
+                grid.addCell(cell, botCellType);
                 mx = Math.max(mx, minimax(true));
                 grid.emptyCell(cell);
             }

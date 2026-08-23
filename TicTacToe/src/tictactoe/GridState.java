@@ -12,7 +12,7 @@ enum GridState {
         this.state = state;
     }
 
-    String state() {
+    String getState() {
         return state;
     }
 }

@@ -7,7 +7,7 @@ class Grid {
     private final int size = 3;
     private final CellType[][] grid = new CellType[size][size];
 
-    private GridState state ;
+    private GridState state;
     private int xCells, oCells;
 
     Grid() {
@@ -22,7 +22,7 @@ class Grid {
                 grid[row][col] = CellType.EMPTY;
     }
 
-    void updateState() {
+    private void updateState() {
         boolean xWins = false, oWins = false;
         if(scan(CellType.X))
             xWins = true;
@@ -40,7 +40,7 @@ class Grid {
         }
     }
 
-    boolean scan(CellType cellType) {
+    private boolean scan(CellType cellType) {
         int i, j;
         // row, col
         for(i = 0; i < size; i++) {
@@ -85,7 +85,7 @@ class Grid {
         updateState();
     }
 
-    void print() {
+    public void display() {
         final int ind = 2 + size + (size - 1) + 2;
         for(int i = 0; i < ind; i++) {
             System.out.print('-');
@@ -103,7 +103,11 @@ class Grid {
         System.out.println();
     }
 
-    public List<Cell> getEmptyCells() {
+    boolean isEmptyCell(int row, int col) {
+        return grid[row][col] == CellType.EMPTY;
+    }
+
+    List<Cell> getEmptyCells() {
         List<Cell> availableCells = new ArrayList<>();
         for (int row = 0; row < size; row++)
             for (int col = 0; col < size; col++)
@@ -122,9 +126,5 @@ class Grid {
 
     CellType getCellType(int row, int col) {
         return grid[row][col];
-    }
-
-    boolean isEmptyCell(int row, int col) {
-        return grid[row][col] == CellType.EMPTY;
     }
 }

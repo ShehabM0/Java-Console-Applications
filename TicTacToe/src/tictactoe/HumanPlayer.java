@@ -4,11 +4,12 @@ import java.util.InputMismatchException;
 import java.util.Scanner;
 
 class HumanPlayer implements Player {
-    private final Scanner scanner = new Scanner(System.in);
+    private final Scanner scanner;
     private final Grid grid;
     private final int gridSize;
 
-    HumanPlayer(Grid grid) {
+    HumanPlayer(Grid grid, Scanner scanner) {
+        this.scanner = scanner;
         this.grid = grid;
         this.gridSize = grid.getSize();
     }
