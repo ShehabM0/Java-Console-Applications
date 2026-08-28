@@ -6,15 +6,13 @@ import java.util.*;
 
 class FileAnalyzer {
     private final List<String> paragraphs;
-    private final Scanner sc;
     private final File file;
-    private ReadabilityIndex automatedReadabilityIndex, colemanLiauIndex, fleschKincaidIndex, smogIndex;
+    private Set<AbstractReadabilityIndex> readabilityIndices;
     private TextStatistics fileStatistics;
     private int paragraphsCount;
 
-    FileAnalyzer(File file, Scanner sc) {
+    FileAnalyzer(File file) {
         this.file = file;
-        this.sc = sc;
 
         fileStatistics = new TextStatistics(0, 0, 0, new SyllablePair(0, 0));
         paragraphs = readFile();
@@ -36,10 +34,7 @@ class FileAnalyzer {
             System.out.printf("Paragraph is:%n%s%n", paragraph);
             TextStatistics paragraphStatistics = ParagraphStatisticsService.of(paragraph);
 
-            automatedReadabilityIndex = new AutomatedReadabilityIndex(paragraphStatistics);
-            fleschKincaidIndex = new FleschKincaidIndex(paragraphStatistics);
-            smogIndex = new SmogIndex(paragraphStatistics);
-            colemanLiauIndex = new ColemanLiauIndex(paragraphStatistics);
+            readabilityIndices = createReadabilityIndices(paragraphStatistics);
             double paragraphReadabilityAge = calcReadabilityAvgAge();
 
             System.out.printf(
@@ -50,7 +45,7 @@ class FileAnalyzer {
                     paragraphStatistics.syllablePair().syllables(),
                     paragraphStatistics.syllablePair().polysyllables()
             );
-            menu();
+            displayReadabilityIndices();
             displayReadabilityAvgAge(paragraphReadabilityAge, false);
 
             accumulateFileParagraphsStatistics(paragraphStatistics);
@@ -69,45 +64,11 @@ class FileAnalyzer {
                 fileStatistics.syllablePair().polysyllables()
         );
 
-        automatedReadabilityIndex = new AutomatedReadabilityIndex(fileStatistics);
-        fleschKincaidIndex = new FleschKincaidIndex(fileStatistics);
-        smogIndex = new SmogIndex(fileStatistics);
-        colemanLiauIndex = new ColemanLiauIndex(fileStatistics);
+        readabilityIndices = createReadabilityIndices(fileStatistics);
         double fileReadabilityAvgAge = calcReadabilityAvgAge();
-        displayReadabilityIndices(new ReadabilityIndex[] {
-                automatedReadabilityIndex,
-                fleschKincaidIndex,
-                smogIndex,
-                colemanLiauIndex
-        });
+        displayReadabilityIndices();
 
         displayReadabilityAvgAge(fileReadabilityAvgAge, true);
-    }
-
-    void menu() {
-        String action;
-        while (true) {
-            displayActions();
-            action = sc.next();
-            try {
-                ReadabilityIndex[] readabilityIndices = switch (Action.valueOf(action.toUpperCase())) {
-                    case ARI -> new ReadabilityIndex[] { automatedReadabilityIndex };
-                    case FK -> new ReadabilityIndex[] { fleschKincaidIndex };
-                    case SMOG -> new ReadabilityIndex[] { smogIndex };
-                    case CL -> new ReadabilityIndex[] { colemanLiauIndex };
-                    case ALL -> new ReadabilityIndex[] {
-                            automatedReadabilityIndex,
-                            fleschKincaidIndex,
-                            smogIndex,
-                            colemanLiauIndex
-                    };
-                };
-                displayReadabilityIndices(readabilityIndices);
-                break;
-            } catch (IllegalArgumentException e) {
-                System.out.println("Unknown action: " + action);
-            }
-        }
     }
 
     private List<String> readFile() {
@@ -127,20 +88,22 @@ class FileAnalyzer {
         return paragraphs;
     }
 
-    private double calcReadabilityAvgAge() {
-        ReadabilityIndex[] readabilityIndices = {
-                automatedReadabilityIndex,
-                colemanLiauIndex,
-                fleschKincaidIndex,
-                smogIndex
-        };
+    private Set<AbstractReadabilityIndex> createReadabilityIndices(TextStatistics textStatistics) {
+        return new HashSet<>(Set.of(
+                new AutomatedReadabilityIndex(textStatistics),
+                new FleschKincaidIndex(textStatistics),
+                new SmogIndex(textStatistics),
+                new ColemanLiauIndex(textStatistics)
+        ));
+    }
 
+    private double calcReadabilityAvgAge() {
         int ageSum = 0;
         for(ReadabilityIndex readabilityIndex : readabilityIndices) {
             double readabilityIndexScore = readabilityIndex.getScore();
             ageSum += ReadabilityIndex.calcAge(readabilityIndexScore);
         }
-        return (double) ageSum / readabilityIndices.length;
+        return (double) ageSum / readabilityIndices.size();
     }
 
     private void accumulateFileParagraphsStatistics(TextStatistics paragraphStatistics) {
@@ -155,20 +118,8 @@ class FileAnalyzer {
         );
     }
 
-    private void displayActions() {
-        System.out.printf("%nEnter the score you want to calculate (");
-        Action[] actions = Action.values();
-        int actionsLen = actions.length;
-        for (int i = 0; i < actionsLen; i++)
-            System.out.printf(
-                    "%s%s",
-                    actions[i],
-                    i == actionsLen - 1 ? "" : ", "
-            );
-        System.out.print("): ");
-    }
-
-    private void displayReadabilityIndices(ReadabilityIndex[] readabilityIndices) {
+    private void displayReadabilityIndices() {
+        System.out.println();
         for (ReadabilityIndex readabilityIndex : readabilityIndices) {
             double score = readabilityIndex.getScore();
             int age = readabilityIndex.getAge();

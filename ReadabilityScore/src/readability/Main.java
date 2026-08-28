@@ -21,8 +21,6 @@ public class Main {
 
     public static void main(String[] args) {
         final File file = createFile(args);
-        try (Scanner sc = new Scanner(System.in)){
-            new FileAnalyzer(file, sc).analyze();
-        }
+        new FileAnalyzer(file).analyze();
     }
 }

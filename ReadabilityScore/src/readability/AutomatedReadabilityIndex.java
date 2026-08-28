@@ -11,6 +11,7 @@ class AutomatedReadabilityIndex extends AbstractReadabilityIndex {
         final double sentencesCount = statistics.sentences();
         final double wordsCount = statistics.words();
         final double charactersCount = statistics.characters();
-        return (4.71 * (charactersCount / wordsCount)) + (0.5 * (wordsCount / sentencesCount)) - 21.43;
+        final double score = (4.71 * (charactersCount / wordsCount)) + (0.5 * (wordsCount / sentencesCount)) - 21.43;
+        return Math.max(score, 0);
     }
 }
