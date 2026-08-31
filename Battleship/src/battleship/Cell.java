@@ -11,7 +11,7 @@ record Cell(int x, int y) {
         return new Cell(x, y);
     }
 
-    private static boolean isValidString(String cell) {
+    static boolean isValidString(String cell) {
         return cell.matches("(?i)[A-J]([1-9]|10)");
     }
 }

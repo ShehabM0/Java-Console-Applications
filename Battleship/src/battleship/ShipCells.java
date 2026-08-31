@@ -12,6 +12,10 @@ record ShipCells(Cell from, Cell to) {
         }
     }
 
+    int getCordsLen() {
+        return to.x() - from.x() + to.y() - from.y() + 1;
+    }
+
     void displayCordsInfo() {
         System.out.printf("Length: %d%n", to.x() - from.x() + to.y() - from.y() + 1);
         System.out.print("Parts: ");
@@ -26,8 +30,6 @@ record ShipCells(Cell from, Cell to) {
     }
 
     private int compare(Cell c1, Cell c2) {
-        if(c1.x() == c2.x())
-            return Integer.compare(c1.y(), c2.y());
-        return Integer.compare(c1.x(), c2.x());
+        return c1.x() == c2.x() ? Integer.compare(c1.y(), c2.y()) : Integer.compare(c1.x(), c2.x());
     }
 }

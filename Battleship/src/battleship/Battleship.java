@@ -10,16 +10,26 @@ class Battleship {
         this.sc = sc;
         grid = new Grid();
         grid.display();
-        placeShipInput();
+        placeAllShips();
     }
 
-    private void placeShipInput() {
+    private void placeAllShips() {
+        for(Ship ship : Ship.values()) {
+            System.out.printf(
+                    "Enter the coordinates of the %s (%d cells):%n",
+                    ship,
+                    ship.size()
+            );
+            placeShipInput(ship);
+        }
+    }
+
+    private void placeShipInput(Ship ship) {
         String[] shipCell;
         while (true) {
-            System.out.println("Enter the coordinates of the ship:");
             shipCell = sc.nextLine().split("\\s+");
             if(shipCell.length != 2) {
-                System.out.println("Error! Enter valid coordinates.");
+                System.out.println("Error!");
                 continue;
             }
             try {
@@ -27,7 +37,10 @@ class Battleship {
                         Cell.parseCell(shipCell[0]),
                         Cell.parseCell(shipCell[1])
                 );
+                new ShipPlacement(ship, shipCells);
+
                 grid.placeShip(shipCells);
+                grid.display();
                 break;
             } catch (IllegalArgumentException e) {
                 System.out.println(e.getMessage());
