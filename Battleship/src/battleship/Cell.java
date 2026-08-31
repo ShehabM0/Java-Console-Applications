@@ -3,7 +3,7 @@ package battleship;
 record Cell(int x, int y) {
     static Cell parseCell(String cell) {
         if(!isValidString(cell))
-            throw new IllegalArgumentException("Invalid cell: " + cell + "!");
+            throw new IllegalArgumentException("Error! You entered the wrong coordinates! Try again:");
 
         cell = cell.toUpperCase();
         int x = cell.charAt(0) - 'A';

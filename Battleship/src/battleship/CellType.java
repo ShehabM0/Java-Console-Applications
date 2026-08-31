@@ -15,4 +15,16 @@ enum CellType {
     char symbol() {
         return symbol;
     }
+
+    boolean isHit() {
+        return this == HIT;
+    }
+
+    boolean isMiss() {
+        return this == MISS;
+    }
+
+    boolean isEmpty() {
+        return this == EMPTY;
+    }
 }
