@@ -2,7 +2,7 @@ package battleship;
 
 class Grid {
     private final int SHIP_COUNT = Ship.values().length;
-    private final int SIZE = 10;
+    final static int SIZE = 10;
     private final ShipCell[][] grid = new ShipCell[SIZE][SIZE];
     private int sankShips;
 

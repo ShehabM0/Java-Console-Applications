@@ -4,65 +4,73 @@ import java.util.Scanner;
 
 class Battleship {
     private final Scanner sc;
-    private final Grid grid;
+    private final Player player1, player2;
 
     Battleship(Scanner sc) {
         this.sc = sc;
-        grid = new Grid();
-        grid.display();
-        placeAllShips();
-        start();
+        player1 = new Player("Player1");
+        player2 = new Player("Player2");
     }
 
-    private void placeAllShips() {
-        for(Ship ship : Ship.values()) {
+    public void launch() {
+        placeAllShips(player1);
+        enterInput();
+        placeAllShips(player2);
+        enterInput();
+
+        start(player1);
+    }
+
+
+    private void placeAllShips(Player player) {
+        System.out.printf("%s, place your ships to the game field%n", player.getName());
+        player.getGrid().display();
+        for (Ship ship : Ship.values()) {
             System.out.printf(
                     "%nEnter the coordinates of the %s (%d cells):%n",
                     ship,
                     ship.size()
             );
-            placeShipInput(ship);
+
+            placeShipInput(player.getGrid(), ship);
         }
         System.out.println();
-        grid.display();
     }
 
-    private void start() {
-        Grid fogGrid = new Grid();
-        System.out.println("\nThe game starts!");
-        System.out.println();
-        fogGrid.display();
-        System.out.println("\nTake a shot!");
+    private void start(Player player) {
+        player.displayGrids();
+        System.out.printf("%s, it's your turn:%n", player.getName());
 
         String cellString;
-        while(true) {
+        while (true) {
             System.out.println();
-            cellString = sc.next();
+            cellString = sc.next(); sc.nextLine();
             try {
                 Cell cell = Cell.parseCell(cellString);
-                ShootResult shootResult = grid.shoot(cell);
-                fogGrid.mirror(cell, shootResult);
+                Player opponentPlayer = player == player1 ? player2 : player1;
+                ShootResult shootResult = player.shoot(opponentPlayer, cell);
 
-                System.out.println();
-                fogGrid.display();
                 System.out.println(
                         switch (shootResult) {
-                            case HIT -> "\nYou hit a ship! Try again:";
-                            case MISS -> "\nYou missed. Try again:";
-                            case SANK  -> "\nYou sank a ship! Specify a new target:";
+                            case HIT -> "\nYou hit a ship!";
+                            case MISS -> "\nYou missed!";
+                            case SANK -> "\nYou sank a ship!";
                             case WON -> "\nYou sank the last ship. You won. Congratulations!";
                         }
                 );
 
-                if(shootResult == ShootResult.WON)
+                if (shootResult == ShootResult.WON)
                     break;
+
+                enterInput();
+                start(player == player1 ? player2 : player1);
             } catch (IllegalArgumentException e) {
                 System.out.println(e.getMessage());
             }
         }
     }
 
-    private void placeShipInput(Ship ship) {
+    private void placeShipInput(Grid grid, Ship ship) {
         String[] shipCell;
         while (true) {
             System.out.println();
@@ -88,32 +96,8 @@ class Battleship {
         }
     }
 
-//private void placeShipInput(Ship ship) {
-//    String[] cellStrings = new String[]{
-//            "F3 F7",
-//            "A1 D1",
-//            "J10 J8",
-//            "B9 D9",
-//            "I2 J2"
-//    };
-//    for(String cellString : cellStrings) {
-//        String[] shipCell = cellString.split("\\s+");
-//        if(shipCell.length != 2) {
-//            System.out.println("Error!");
-//            continue;
-//        }
-//        try {
-//            ShipCells shipCells = new ShipCells(
-//                    Cell.parseCell(shipCell[0]),
-//                    Cell.parseCell(shipCell[1])
-//            );
-//            ShipPlacement shipPlacement = new ShipPlacement(ship, shipCells);
-//
-//            grid.placeShip(shipPlacement, shipCells);
-//            grid.display();
-//            break;
-//        } catch (IllegalArgumentException e) {
-//            System.out.println(e.getMessage());
-//        }
-//    }
+    void enterInput() {
+        System.out.println("\nPress Enter and pass the move to another player\n...");
+        sc.nextLine();
+    }
 }
