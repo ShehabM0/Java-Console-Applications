@@ -8,6 +8,7 @@ class Board {
     private Grid grid;
     private int originX, originY;
     private int spawnOriginX, spawnOriginY;
+    private boolean isTetrominoPlaced;
 
     Board() {
         this(20);
@@ -18,6 +19,7 @@ class Board {
             throw new IllegalArgumentException("Enter valid board size!");
         N = n;
         board = new char[N][M];
+        isTetrominoPlaced = false;
 
         init();
     }
@@ -39,46 +41,81 @@ class Board {
     }
 
     void moveTetrominoRight() {
-        clearPiece();
-        originY = (originY + 1) % M;
-        drawPiece();
+        if(isTetrominoPlaced)
+            return;
+
+        int rightBorder = grid.getRightBorder();
+        int boardY = originY + (rightBorder - spawnOriginY);
+        if(boardY + 1 < M) {
+            clearPiece();
+            originY++;
+            drawPiece();
+        }
     }
 
     void moveTetrominoLeft() {
-        clearPiece();
-        originY = ((originY - 1) + M) % M;
-        drawPiece();
+        if(isTetrominoPlaced)
+            return;
+
+        int leftBorder = grid.getLeftBorder();
+        int boardY = originY + (leftBorder - spawnOriginY);
+        if(boardY - 1 > -1) {
+            clearPiece();
+            originY--;
+            drawPiece();
+        }
     }
 
     void moveTetrominoDown() {
-        clearPiece();
-        originX = (originX + 1) % N;
-        drawPiece();
+        int bottomBorder = grid.getBottomBorder();
+        int boardX = originX + (bottomBorder - spawnOriginX);
+        if(boardX + 1 < N) {
+            clearPiece();
+            originX++;
+            drawPiece();
+        } else {
+            isTetrominoPlaced = true;
+        }
     }
 
     void rotateTetromino() {
+        if(isTetrominoPlaced)
+            return;
+
+        int[] nextStateBorders = grid.getNextStateBorders();
+        int nextBottomBorder = originX + (nextStateBorders[0] - spawnOriginX);
+        int nextLeftBorder = originY + (nextStateBorders[1] - spawnOriginY),
+            nextRightBorder = originY + (nextStateBorders[2] - spawnOriginY);
+
+        if(nextBottomBorder >= N)
+            makeTetrominoBottomRotatable(nextBottomBorder);
+        if(nextRightBorder >= M)
+            makeTetrominoRightRotatable(nextRightBorder);
+        if(nextLeftBorder < 0)
+            makeTetrominoLeftRotatable(nextLeftBorder);
         clearPiece();
         grid.rotate();
         drawPiece();
     }
 
-    private void clearPiece() {
-        for(int gridCord : grid.getCurrentStateCords()) {
-            int offsetX = grid.idxToX(gridCord) - spawnOriginX;
-            int offsetY = grid.idxToY(gridCord) - spawnOriginY;
-            int boardX = originX + offsetX;
-            int boardY = originY + offsetY;
-            board[boardX % N][boardY % M] = '-';
+    void makeTetrominoBottomRotatable(int bottomBorder) {
+        while (bottomBorder >= N) {
+            bottomBorder--;
+            moveTetrominoUp();
         }
     }
 
-    private void drawPiece() {
-        for(int gridCord : grid.getCurrentStateCords()) {
-            int offsetX = grid.idxToX(gridCord) - spawnOriginX;
-            int offsetY = grid.idxToY(gridCord) - spawnOriginY;
-            int boardX = originX + offsetX;
-            int boardY = originY + offsetY;
-            board[boardX % N][boardY % M] = '0';
+    void makeTetrominoRightRotatable(int rightBorder) {
+        while (rightBorder >= M) {
+            rightBorder--;
+            moveTetrominoLeft();
+        }
+    }
+
+    void makeTetrominoLeftRotatable(int leftBorder) {
+        while (leftBorder < 0) {
+            leftBorder++;
+            moveTetrominoRight();
         }
     }
 
@@ -89,6 +126,36 @@ class Board {
             System.out.println();
         }
         System.out.println();
+    }
+
+    private void clearPiece() {
+        for(int gridCord : grid.getCurrentStateCords()) {
+            int offsetX = grid.idxToX(gridCord) - spawnOriginX;
+            int offsetY = grid.idxToY(gridCord) - spawnOriginY;
+            int boardX = originX + offsetX;
+            int boardY = originY + offsetY;
+            board[boardX][boardY] = '-';
+        }
+    }
+
+    private void drawPiece() {
+        for (int gridCord : grid.getCurrentStateCords()) {
+            int offsetX = grid.idxToX(gridCord) - spawnOriginX;
+            int offsetY = grid.idxToY(gridCord) - spawnOriginY;
+            int boardX = originX + offsetX;
+            int boardY = originY + offsetY;
+            board[boardX][boardY] = '0';
+        }
+    }
+
+    private void moveTetrominoUp() {
+        int topBorder = 0;
+        int boardX = originX + (topBorder - spawnOriginX);
+        if(boardX - 1 > -1) {
+            clearPiece();
+            originX--;
+            drawPiece();
+        }
     }
 }
 
@@ -102,8 +169,4 @@ whole grid moves inside the board.
 │       │ Grid  │      │
 │       └───────┘      │
 └──────────────────────┘
-
-grid.idxToX/Y(gridCord)                  // board's spawn cords
-grid.idxToX/Y(gridCord) - spawnOriginX/Y // board's origin cords (top-left corner)
-originX/Y + offsetX/Y                    // Shift the Grid to its current position on the Board
 */
