@@ -1,47 +1,47 @@
 package tetris;
 
 enum Tetromino {
-    O(new int[][] {
+    O(new Integer[][] {
             {4, 14, 15, 5}
     }),
-    I(new int[][] {
+    I(new Integer[][] {
             {4, 14, 24, 34},
             {3, 4, 5, 6}
     }),
-    S(new int[][] {
+    S(new Integer[][] {
             {5, 4, 14, 13},
             {4, 14, 15, 25}
     }),
-    Z(new int[][] {
+    Z(new Integer[][] {
             {4, 5, 15, 16},
             {5, 15, 14, 24}
     }),
-    L(new int[][] {
+    L(new Integer[][] {
             {4, 14, 24, 25},
             {5, 15, 14, 13},
             {4, 5, 15, 25},
             {6, 5, 4, 14}
     }),
-    J(new int[][] {
+    J(new Integer[][] {
             {5, 15, 25, 24},
             {15, 5, 4, 3},
             {5, 4, 14, 24},
             {4, 14, 15, 16}
     }),
-    T(new int[][] {
+    T(new Integer[][] {
             {4, 14, 24, 15},
             {4, 13, 14, 15},
             {5, 15, 25, 14},
             {4, 5, 6, 15}
     });
 
-    private final int[][] states;
+    private final Integer[][] states;
 
-    Tetromino(int[][] states) {
+    Tetromino(Integer[][] states) {
         this.states = states;
     }
 
-    public int[] getState(int idx) {
+    public Integer[] getState(Integer idx) {
         return states[idx];
     }
 

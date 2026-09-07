@@ -6,6 +6,51 @@ class Main {
     private static final Scanner sc = new Scanner(System.in);
 
     public static void main(String[] args) {
+        int m = sc.nextInt(), n = sc.nextInt();
+        Board board= new Board(n);
+        board.display();
+
+        String action = sc.next();
+        while(!action.equalsIgnoreCase("exit")) {
+            if(action.equalsIgnoreCase("piece")) {
+                Tetromino tetromino = getTetrominoInput();
+                board.spawn(tetromino);
+                board.display();
+                action = sc.next();
+                continue;
+            }
+
+            try {
+                Move move = Move.valueOf(action.toUpperCase());
+                if(move != Move.DOWN) {
+                    board.moveTetrominoDown();
+                    if(board.isGameOver()) {
+                        board.display();
+                        System.out.println("Game Over!");
+                        break;
+                    }
+                }
+                switch (move) {
+                    case ROTATE -> board.rotateTetromino();
+                    case RIGHT -> board.moveTetrominoRight();
+                    case LEFT -> board.moveTetrominoLeft();
+                    case DOWN -> board.moveTetrominoDown();
+                    case BREAK -> board.disappear();
+                }
+                if(move == Move.DOWN && board.isGameOver()) {
+                    board.display();
+                    System.out.println("Game Over!");
+                    break;
+                }
+                board.display();
+            } catch (IllegalArgumentException _) {
+                System.out.println("Unknown move: " + action);
+            }
+            action = sc.next();
+        }
+    }
+
+    private static Tetromino getTetrominoInput() {
         String tetrominoInput = sc.next();
         Tetromino tetromino = null;
         while (tetromino == null) {
@@ -24,30 +69,6 @@ class Main {
                 tetrominoInput = sc.next();
             }
         }
-
-        int m = sc.nextInt(), n = sc.nextInt();
-        Board board = new Board(n);
-        board.display();
-        board.spawn(tetromino);
-        board.display();
-
-        String action = sc.next();
-        while(!action.equalsIgnoreCase("exit")) {
-            try {
-                Move move = Move.valueOf(action.toUpperCase());
-                if(move != Move.DOWN)
-                    board.moveTetrominoDown();
-                switch (move) {
-                    case ROTATE -> board.rotateTetromino();
-                    case RIGHT -> board.moveTetrominoRight();
-                    case LEFT -> board.moveTetrominoLeft();
-                    case DOWN -> board.moveTetrominoDown();
-                }
-                board.display();
-            } catch (IllegalArgumentException _) {
-                System.out.println("Unknown move: " + action);
-            }
-            action = sc.next();
-        }
+        return tetromino;
     }
 }

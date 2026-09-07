@@ -1,12 +1,16 @@
 package tetris;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 class Grid {
     static final int SIZE = 4;
 
     private final Tetromino tetromino;
     private final char[][] grid;
 
-    private int[] currentTetrominoState;
+    private Integer[] currentTetrominoState;
     private int rotationIndex;
 
     Grid(Tetromino tetromino) {
@@ -18,14 +22,14 @@ class Grid {
         placeTetromino();
     }
 
-    int[] getNextStateBorders() {
+    Integer[] getNextStateBorders() {
         int nextRotationIndex = (rotationIndex + 1) % tetromino.getStatesSize();
-        int[] nextTetrominoState = tetromino.getState(nextRotationIndex);
+        Integer[] nextTetrominoState = tetromino.getState(nextRotationIndex);
 
         int nextBottomBorder = getBottomBorder(nextTetrominoState);
         int nextLeftBorder = getLeftBorder(nextTetrominoState),
             nextRightBorder = getRightBorder(nextTetrominoState);
-        return new int[]{ nextBottomBorder, nextLeftBorder, nextRightBorder };
+        return new Integer[]{ nextBottomBorder, nextLeftBorder, nextRightBorder };
     }
 
     int getRightBorder() {
@@ -52,28 +56,58 @@ class Grid {
         return bottomBorder;
     }
 
-    int getRightBorder(int[] currentTetrominoState) {
+    int getRightBorder(Integer[] tetrominoState) {
         int rightBorder = Integer.MIN_VALUE;
-        for(int idx : currentTetrominoState) {
+        for(int idx : tetrominoState) {
             rightBorder = Math.max(rightBorder, idx % Board.M);
         }
         return rightBorder;
     }
 
-    int getLeftBorder(int[] currentTetrominoState) {
+    int getLeftBorder(Integer[] tetrominoState) {
         int leftBorder = Integer.MAX_VALUE;
-        for(int idx : currentTetrominoState) {
+        for(int idx : tetrominoState) {
             leftBorder = Math.min(leftBorder, idx % Board.M);
         }
         return leftBorder;
     }
 
-    int getBottomBorder(int[] currentTetrominoState) {
+    int getBottomBorder(Integer[] tetrominoState) {
         int bottomBorder = Integer.MIN_VALUE;
-        for(int idx : currentTetrominoState) {
+        for(int idx : tetrominoState) {
             bottomBorder = Math.max(bottomBorder, idx / Board.M);
         }
         return bottomBorder;
+    }
+
+    List<Integer> getLeafCells() {
+        List<Integer> leafCells = new ArrayList<>(List.of());
+        for(int idx : currentTetrominoState) {
+            if(!Arrays.asList(currentTetrominoState).contains(idx + Board.M)) {
+                leafCells.add(idx);
+            }
+        }
+        return leafCells;
+    }
+
+    List<Integer> getRightCells() {
+        List<Integer> rightCells = new ArrayList<>(List.of());
+        for(int idx : currentTetrominoState) {
+            if(!Arrays.asList(currentTetrominoState).contains(idx + 1)) {
+                rightCells.add(idx);
+            }
+        }
+        return rightCells;
+    }
+
+    List<Integer> getLeftCells() {
+        List<Integer> leftCells = new ArrayList<>(List.of());
+        for(int idx : currentTetrominoState) {
+            if(!Arrays.asList(currentTetrominoState).contains(idx - 1)) {
+                leftCells.add(idx);
+            }
+        }
+        return leftCells;
     }
 
     void rotate() {
@@ -90,17 +124,22 @@ class Grid {
         return idx % Board.M;
     }
 
-    int[] getCurrentStateCords() {
+    Integer[] getCurrentStateCords() {
         return currentTetrominoState;
     }
 
-    int[] getOrigin() {
+    Integer[] getNextStateCords() {
+        int nextRotationIndex = (rotationIndex + 1) % tetromino.getStatesSize();
+        return tetromino.getState(nextRotationIndex);
+    }
+
+    Integer[] getOrigin() {
         int originX = Integer.MAX_VALUE, originY = Integer.MAX_VALUE;
         for(int idx : currentTetrominoState) {
             originX = Math.min(originX, idx / Board.M);
             originY = Math.min(originY, idx % Board.M);
         }
-        return new int[]{ originX, originY };
+        return new Integer[]{ originX, originY };
     }
 
     void display() {
@@ -123,6 +162,7 @@ class Grid {
     }
 
     private void draw() {
+        // top-left corner of Grid inside Board.
         int originX = Integer.MAX_VALUE, originY = Integer.MAX_VALUE;
         for(int idx : currentTetrominoState) {
             originX = Math.min(originX, idx / Board.M);
@@ -133,5 +173,30 @@ class Grid {
             int y = idx % Board.M - originY;
             grid[x][y] = '0';
         }
+    }
+
+    /////// Cached tetromino rotations ///////
+
+    private void ccw() {
+        transpose();
+        reverse();
+    }
+
+    private void transpose() {
+        for(int i = 0; i < SIZE; i++)
+            for(int j = i + 1; j < SIZE; j++)
+                swap(i, j, j, i);
+    }
+
+    private void reverse() {
+        for(int i = 0; i < SIZE / 2; i++)
+            for(int j = 0; j < SIZE; j++)
+                swap(i, j, SIZE - 1 - i, j);
+    }
+
+    private void swap(int i1, int j1, int i2, int j2) {
+        char temp = grid[i1][j1];
+        grid[i1][j1] = grid[i2][j2];
+        grid[i2][j2] = temp;
     }
 }
