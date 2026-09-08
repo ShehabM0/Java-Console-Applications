@@ -10,26 +10,22 @@ class Board {
     private int spawnOriginX, spawnOriginY;
     private boolean isTetrominoPlaced;
 
-    Board() {
-        this(20);
-    }
-
     Board(int n) {
         if(n < 5)
             throw new IllegalArgumentException("Enter valid board size!");
         N = n;
-        board = new char[N][M];
+        board = new char[N + 1][M + 1];
 
         init();
     }
 
     void init() {
-        for(int i = 0; i < N; i++)
-            for(int j = 0; j < M; j++)
-                board[i][j] = '-';
+        for(int i = 0; i <= N; i++)
+            for(int j = 0; j <= M; j++)
+                    board[i][j] = i == N || j == M ? '#' : ' ';
     }
 
-    void spawn(Tetromino tetromino) {
+    boolean spawn(Tetromino tetromino) {
         grid = new Grid(tetromino);
         isTetrominoPlaced = false;
 
@@ -37,7 +33,10 @@ class Board {
         originX = gridOrigin[0]; originY = gridOrigin[1];
         spawnOriginX = originX; spawnOriginY = originY;
 
+        if(!canSpawn())
+            return false;
         drawPiece();
+        return true;
     }
 
     void moveTetrominoRight() {
@@ -98,7 +97,7 @@ class Board {
             if(cells == M) {
                 delXs++;
                 for(int j = 0; j < M; j++)
-                    board[i][j] = '-';
+                    board[i][j] = ' ';
             }
         }
 
@@ -107,29 +106,36 @@ class Board {
                 for (int j = 0; j < M; j++)
                     if (board[i][j] == '0') {
                         board[i + 1][j] = '0';
-                        board[i][j] = '-';
+                        board[i][j] = ' ';
                     }
     }
 
-    boolean isGameOver() {
-        boolean maxHeight = false;
-        int cnt;
-        for(int i = 0; i < M; i++) {
-            cnt = 0;
-            for(int j = 0; j < N; j++)
-                cnt += board[j][i] == '0' ? 1 : 0;
-            if(cnt == N) {
-                maxHeight = true;
-                break;
-            }
+    boolean canMoveDown() {
+        if(isTetrominoPlaced)
+            return false;
+
+        int bottomBorder = grid.getBottomBorder();
+        int boardX = originX + (bottomBorder - spawnOriginX);
+
+        if(boardX == N - 1) {
+            isTetrominoPlaced = true;
+            return false;
         }
 
-        return (!canMoveDown() && maxHeight);
+        for(int leafCell : grid.getLeafCells()) {
+            int boardY = originY + (grid.idxToY(leafCell) - spawnOriginY);
+            boardX = originX + (grid.idxToX(leafCell) - spawnOriginX);
+            if(board[boardX + 1][boardY] == '0') {
+                isTetrominoPlaced = true;
+                return false;
+            }
+        }
+        return true;
     }
 
     void display() {
-        for(int i = 0; i < N; i++) {
-            for(int j = 0; j < M; j++)
+        for(int i = 0; i <= N; i++) {
+            for(int j = 0; j <= M; j++)
                 System.out.print(board[i][j] + " ");
             System.out.println();
         }
@@ -142,7 +148,7 @@ class Board {
             int offsetY = grid.idxToY(gridCord) - spawnOriginY;
             int boardX = originX + offsetX;
             int boardY = originY + offsetY;
-            board[boardX][boardY] = '-';
+            board[boardX][boardY] = ' ';
         }
     }
 
@@ -175,6 +181,16 @@ class Board {
             leftBorder++;
             moveTetrominoRight();
         }
+    }
+
+    private boolean canSpawn() {
+        for(int gridCord : grid.getCurrentStateCords()) {
+            int boardX = grid.idxToX(gridCord);
+            int boardY = grid.idxToY(gridCord);
+            if(board[boardX][boardY] == '0')
+                return false;
+        }
+        return true;
     }
 
     private boolean canRotate() {
@@ -221,29 +237,6 @@ class Board {
             int boardX = originX + (grid.idxToX(gridCord) - spawnOriginX);
             boardY = originY + (grid.idxToY(gridCord) - spawnOriginY);
             if(board[boardX][boardY - 1] == '0') {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean canMoveDown() {
-        if(isTetrominoPlaced)
-            return false;
-
-        int bottomBorder = grid.getBottomBorder();
-        int boardX = originX + (bottomBorder - spawnOriginX);
-
-        if(boardX == N - 1) {
-            isTetrominoPlaced = true;
-            return false;
-        }
-
-        for(int leafCell : grid.getLeafCells()) {
-            int boardY = originY + (grid.idxToY(leafCell) - spawnOriginY);
-            boardX = originX + (grid.idxToX(leafCell) - spawnOriginX);
-            if(board[boardX + 1][boardY] == '0') {
-                isTetrominoPlaced = true;
                 return false;
             }
         }

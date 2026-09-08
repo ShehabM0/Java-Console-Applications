@@ -4,6 +4,5 @@ enum Move {
     ROTATE,
     RIGHT,
     DOWN,
-    LEFT,
-    BREAK;
+    LEFT
 }

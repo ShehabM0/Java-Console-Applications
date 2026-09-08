@@ -1,74 +1,47 @@
 package tetris;
 
 import java.util.Scanner;
+import java.util.Random;
 
 class Main {
+    private static final Tetromino[] tetrominoList = Tetromino.values();
     private static final Scanner sc = new Scanner(System.in);
 
     public static void main(String[] args) {
-        int m = sc.nextInt(), n = sc.nextInt();
+        int n = sc.nextInt();
         Board board= new Board(n);
         board.display();
 
-        String action = sc.next();
-        while(!action.equalsIgnoreCase("exit")) {
-            if(action.equalsIgnoreCase("piece")) {
-                Tetromino tetromino = getTetrominoInput();
-                board.spawn(tetromino);
-                board.display();
-                action = sc.next();
-                continue;
+        Tetromino tetromino;
+        String action;
+        while (true) {
+            tetromino = tetrominoList[new Random().nextInt(tetrominoList.length)];
+            if(!board.spawn(tetromino)) {
+                System.out.println("Game Over!");
+                break;
             }
 
-            try {
-                Move move = Move.valueOf(action.toUpperCase());
-                if(move != Move.DOWN) {
-                    board.moveTetrominoDown();
-                    if(board.isGameOver()) {
-                        board.display();
-                        System.out.println("Game Over!");
-                        break;
-                    }
-                }
-                switch (move) {
-                    case ROTATE -> board.rotateTetromino();
-                    case RIGHT -> board.moveTetrominoRight();
-                    case LEFT -> board.moveTetrominoLeft();
-                    case DOWN -> board.moveTetrominoDown();
-                    case BREAK -> board.disappear();
-                }
-                if(move == Move.DOWN && board.isGameOver()) {
-                    board.display();
-                    System.out.println("Game Over!");
-                    break;
-                }
-                board.display();
-            } catch (IllegalArgumentException _) {
-                System.out.println("Unknown move: " + action);
-            }
+            board.display();
             action = sc.next();
-        }
-    }
+            while(!action.equalsIgnoreCase("exit") &&
+                    board.canMoveDown()) {
+                try {
+                    Move move = Move.valueOf(action.toUpperCase());
+                    switch (move) {
+                        case ROTATE -> board.rotateTetromino();
+                        case RIGHT -> board.moveTetrominoRight();
+                        case LEFT -> board.moveTetrominoLeft();
+                        case DOWN -> board.moveTetrominoDown();
+                    }
+                    board.moveTetrominoDown();
+                    board.disappear();
+                    board.display();
+                } catch (IllegalArgumentException _) {
+                    System.out.println("Unknown move: " + action);
+                }
 
-    private static Tetromino getTetrominoInput() {
-        String tetrominoInput = sc.next();
-        Tetromino tetromino = null;
-        while (tetromino == null) {
-            try {
-                tetromino = switch (Tetromino.valueOf(tetrominoInput.toUpperCase())) {
-                    case O -> Tetromino.O;
-                    case I -> Tetromino.I;
-                    case S -> Tetromino.S;
-                    case Z -> Tetromino.Z;
-                    case L -> Tetromino.L;
-                    case J -> Tetromino.J;
-                    case T -> Tetromino.T;
-                };
-            } catch (IllegalArgumentException _) {
-                System.out.println("Unknown tetromino: " + tetrominoInput);
-                tetrominoInput = sc.next();
+                action = sc.next();
             }
         }
-        return tetromino;
     }
 }
