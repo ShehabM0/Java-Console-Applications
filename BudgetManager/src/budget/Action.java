@@ -5,6 +5,8 @@ enum Action {
     Add_PURCHASE("Add purchase"),
     SHOW("Show list of purchases"),
     BALANCE("Balance"),
+    SAVE("Save"),
+    LOAD("Load"),
     EXIT("Exit");
 
     private final String str;

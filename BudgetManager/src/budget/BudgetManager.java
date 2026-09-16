@@ -1,8 +1,13 @@
 package budget;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 class BudgetManager {
+    private final File file = new File("purchases.txt");
     private final PurchaseType[] purchaseTypes = PurchaseType.values();
     private final EnumMap<PurchaseType, List<Purchase>> purchases;
     private final Scanner sc;
@@ -36,6 +41,8 @@ class BudgetManager {
                 case 2 -> purchaseHandler();
                 case 3 -> displayPurchases();
                 case 4 -> displayBalance();
+                case 5 -> saveFile();
+                case 6 -> loadFile();
                 case 0 -> {
                     System.out.print("\nBye!");
                     stop = true;
@@ -163,6 +170,45 @@ class BudgetManager {
         if(item == Action.EXIT)
             return 0;
         return item.ordinal() + 1;
+    }
+
+    private void loadFile() {
+        try (Scanner scanner = new Scanner(file)) {
+            balance = Double.parseDouble(scanner.nextLine());
+            int purchaseTypesCount = purchaseTypes.length;
+            while (purchaseTypesCount-- > 0) {
+                String purchaseTypeStr = scanner.nextLine().toUpperCase();
+                PurchaseType purchaseType = PurchaseType.valueOf(purchaseTypeStr);
+                purchases.get(purchaseType).clear();
+
+                int itemsCount = Integer.parseInt(scanner.nextLine());
+                while (itemsCount-- > 0) {
+                    String itemName = scanner.nextLine();
+                    double itemPrice = Double.parseDouble(scanner.nextLine());
+                    purchases.get(purchaseType).add(new Purchase(itemName, itemPrice));
+                }
+            }
+            System.out.println("Purchases were loaded!\n");
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found!");
+        }
+    }
+
+    private void saveFile() {
+        try(FileWriter writer = new FileWriter(file, true)) {
+            writer.write(String.format("%.2f%n", balance));
+            for(var purchase : purchases.entrySet()) {
+                writer.write(String.format("%s%n", purchase.getKey()));
+                writer.write(String.format("%d%n", purchase.getValue().size()));
+                for(Purchase item : purchase.getValue()) {
+                    writer.write(String.format("%s%n", item.item()));
+                    writer.write(String.format("%.2f%n", item.price()));
+                }
+            }
+            System.out.println("Purchases were saved!\n");
+        } catch (IOException e) {
+            System.out.println("Error writing file: " + e);
+        }
     }
 
     private int readNonNegInt() {
