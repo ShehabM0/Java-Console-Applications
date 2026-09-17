@@ -7,6 +7,7 @@ enum Action {
     BALANCE("Balance"),
     SAVE("Save"),
     LOAD("Load"),
+    ANALYZE("Analyze (Sort)"),
     EXIT("Exit");
 
     private final String str;
