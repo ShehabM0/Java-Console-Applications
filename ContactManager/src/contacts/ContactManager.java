@@ -2,31 +2,34 @@ package contacts;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
+import java.util.stream.Stream;
 
 class ContactManager {
-    private final Scanner sc;
     private final List<Contact> contacts;
 
-    ContactManager(Scanner sc) {
-        this.sc = sc;
+    ContactManager() {
         contacts = new ArrayList<>();
     }
 
-    void add(String... contactInfo) {
+    void addPerson(String... contactInfo) {
         String name = contactInfo[0],
-                surname = contactInfo[1],
-                number = contactInfo[2];
+                number = contactInfo[1],
+                surname = contactInfo[2],
+                birth = contactInfo[3],
+                gender = contactInfo[4];
 
-        String[] contactNumber = number.split("\\s+|-");
-        boolean isValidNumber = ContactNumber.validateNumber(contactNumber);
-        if(!isValidNumber) {
-            System.out.println("Wrong number format!");
-            number = "";
-        }
+        contacts.add(new Person(name, number, surname, birth, gender));
+        System.out.println("The record added.");
+    }
 
-        contacts.add(new Contact(name, surname, number));
+    void addOrg(String... contactInfo) {
+        String name = contactInfo[0],
+                number = contactInfo[1],
+                address = contactInfo[2];
+
+        contacts.add(new Organization(name, number, address));
         System.out.println("The record added.");
     }
 
@@ -36,33 +39,61 @@ class ContactManager {
 
     void list() {
         for(int i = 0; i < contacts.size(); i++) {
-            System.out.printf(
-                    "%d. %s %s, %s%n",
-                    i + 1,
-                    contacts.get(i).getName(),
-                    contacts.get(i).getSurname(),
-                    contacts.get(i).getNumber().isEmpty() ? "[no number]" : contacts.get(i).getNumber()
-            );
+            String name = contacts.get(i).getName();
+            if(contacts.get(i) instanceof Person person)
+                name += " " + person.getSurname();
+            System.out.printf("%d. %s%n", i + 1, name);
         }
+    }
+
+    void list(int idx) {
+        Contact contact = contacts.get(idx);
+        if(contact instanceof Person person) {
+            System.out.printf("Name: %s%n", contact.getName());
+            System.out.printf("Surname: %s%n", person.getSurname());
+            System.out.printf("Birth date: %s%n", person.getBirth());
+            System.out.printf("Gender: %s%n", person.getGender());
+        } else if(contact instanceof Organization organization) {
+            System.out.printf("Organization name: %s%n", contact.getName());
+            System.out.printf("Address: %s%n", organization.getAddress());
+        }
+        System.out.printf("Number: %s%n", contact.getNumber());
+        System.out.printf("Time created: %s%n", contact.getCreatedAt());
+        System.out.printf("Time last edit: %s%n", contact.getUpdatedAt());
     }
 
     void edit(int idx, Field field, String value) {
         Contact contact = contacts.get(idx);
 
-        if(field.getName().equals("name"))
-            contact.setName(value);
-        else if(field.getName().equals("surname"))
-            contact.setSurname(value);
-        else {
+        if(field.getName().equalsIgnoreCase("number")) {
             String[] contactNumber = value.split("\\s+|-");
-            boolean isValidNumber = ContactNumber.validateNumber(contactNumber);
+            boolean isValidNumber = Validator.validateNumber(contactNumber);
             if(!isValidNumber) {
                 System.out.println("Wrong number format!");
                 value = "";
             }
             contact.setNumber(value);
+        } else {
+            Field[] superFields = contact.getClass().getSuperclass().getDeclaredFields();
+            Field[] fields = contact.getClass().getDeclaredFields();
+            Field[] allFields = Stream.concat(
+                    Arrays.stream(superFields),
+                    Arrays.stream(fields)
+            ).toArray(Field[]::new);
+
+            for(Field fieldi : allFields) {
+                if(field.getName().equalsIgnoreCase(fieldi.getName())) {
+                    try {
+                        fieldi.setAccessible(true);
+                        fieldi.set(contact, value);
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
         }
 
+        contact.updateUpdateAt();
         System.out.println("The record updated!");
     }
 
@@ -73,5 +104,9 @@ class ContactManager {
 
     int getCount() {
         return contacts.size();
+    }
+
+    Class<?> getContactType(int idx) {
+        return contacts.get(idx).getClass();
     }
 }

@@ -1,35 +1,39 @@
 package contacts;
 
+import java.time.LocalDateTime;
+
 class Contact {
-    private String name, surname, number;
+    private String name, number;
+    private LocalDateTime createdAt, updatedAt;
 
-    Contact(String name, String surname, String number) {
+    Contact(String name, String number) {
         this.name = name;
-        this.surname = surname;
         this.number = number;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setSurname(String surname) {
-        this.surname = surname;
+        createdAt = LocalDateTime.now().withSecond(0).withNano(0);
+        updatedAt = LocalDateTime.now().withSecond(0).withNano(0);
     }
 
     public void setNumber(String number) {
         this.number = number;
     }
 
-    public String getName() {
-        return name;
+    public void updateUpdateAt() {
+        updatedAt = LocalDateTime.now().withSecond(0).withNano(0);
     }
 
-    public String getSurname() {
-        return surname;
+    public String getName() {
+        return name.isEmpty() ? "[no data]" : name;
     }
 
     public String getNumber() {
-        return number;
+        return number.isEmpty() ? "[no data]" : number;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 }

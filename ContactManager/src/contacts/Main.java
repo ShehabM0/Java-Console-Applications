@@ -1,11 +1,13 @@
 package contacts;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Scanner;
+import java.util.stream.Stream;
 
 public class Main {
     private static final Scanner sc = new Scanner(System.in);
-    private static final ContactManager contactManager = new ContactManager(sc);
+    private static final ContactManager contactManager = new ContactManager();
 
     public static void main(String[] args) {
         Action action = getActionInput();
@@ -14,20 +16,65 @@ public class Main {
                 case ADD -> handleContactAddition();
                 case REMOVE -> handleContactRemoval();
                 case EDIT -> handleContactUpdate();
+                case INFO -> handleContactListing();
                 case COUNT -> contactManager.count();
-                case LIST -> contactManager.list();
             }
+            System.out.println();
             action = getActionInput();
         }
         sc.close();
     }
 
     private static void handleContactAddition() {
-        String name, surname, number;
-        System.out.print("Enter the name: "); name = getStrInput();
-        System.out.print("Enter the surname: "); surname = getStrInput();
+        Class<?> contactType = getContactTypeInput();
+
+        String name, number;
+        String surname = "", birth = "", gender = "";
+        String address = "";
+        System.out.printf(
+                "Enter the%sname: ",
+                contactType == Person.class ? " " : " organization "
+        );
+        name = sc.nextLine();
+        if(name.isBlank()) {
+            System.out.println("Bad name!");
+            name = "";
+        }
+        if(contactType == Person.class) {
+            System.out.print("Enter the surname: "); surname = sc.nextLine();
+            if(surname.isBlank()) {
+                System.out.println("Bad surname!");
+                surname = "";
+            }
+            System.out.print("Enter the birth date: "); birth = sc.nextLine();
+            if(birth.isBlank()) {
+                System.out.println("Bad birth date!");
+                birth = "";
+            }
+            System.out.print("Enter the gender(M, F): "); gender = sc.nextLine();
+            if(gender.isBlank() || !Validator.validateGender(gender)) {
+                System.out.println("Bad gender!");
+                gender = "";
+            }
+        } else {
+            System.out.print("Enter the address: "); address = sc.nextLine();
+            if(address.isBlank()) {
+                System.out.println("Bad address!");
+                address = "";
+            }
+        }
         System.out.print("Enter the number: "); number = getStrInput();
-        contactManager.add(name, surname, number);
+        String[] contactNumber = number.split("\\s+|-");
+        boolean isValidNumber = Validator.validateNumber(contactNumber);
+        if(!isValidNumber) {
+            System.out.println("Wrong number format!");
+            number = "";
+        }
+
+        if(contactType == Person.class)
+            contactManager.addPerson(name, number, surname, birth, gender);
+        else
+            contactManager.addOrg(name, number, address);
     }
 
     private static void handleContactUpdate() {
@@ -36,8 +83,10 @@ public class Main {
             return;
         }
 
-        int idx = getContactListIndex() - 1;
-        Object[] pair = getFieldInput();
+        int idx = getContactListIndex(false) - 1;
+        Class<?> contactType = contactManager.getContactType(idx);
+
+        Object[] pair = getFieldInput(contactType);
         Field field = (Field) pair[0];
         String fieldValue = pair[1].toString();
         contactManager.edit(idx, field, fieldValue);
@@ -49,13 +98,25 @@ public class Main {
             return;
         }
 
-        int idx = getContactListIndex() - 1;
+        int idx = getContactListIndex(false) - 1;
         contactManager.remove(idx);
     }
 
-    private static int getContactListIndex() {
+    private static void handleContactListing() {
+        if(contactManager.getCount() == 0) {
+            System.out.println("Contact list is empty!");
+            return;
+        }
+
+        int idx = getContactListIndex(true) - 1;
+        contactManager.list(idx);
+    }
+
+    private static int getContactListIndex(boolean isInfo) {
         contactManager.list();
-        System.out.print("Select a record: ");
+        System.out.print(
+                isInfo ? "Enter index to show info: " : "Select a record: "
+        );
         String in = sc.nextLine();
         while (true) {
             try {
@@ -75,7 +136,7 @@ public class Main {
 
     private static String getStrInput() {
         String in = sc.nextLine();
-        while(in.isEmpty()) {
+        while(in.isBlank()) {
             System.out.println("Enter a non-empty string!");
             in = sc.nextLine();
         }
@@ -88,7 +149,7 @@ public class Main {
             System.out.printf(
                     "%s%s",
                     action,
-                    (action.ordinal() == Action.values().length - 1) ? "):\n" : ", "
+                    (action.ordinal() == Action.values().length - 1) ? "): " : ", "
             );
         }
 
@@ -103,22 +164,37 @@ public class Main {
         }
     }
 
-    private static Object[] getFieldInput() {
-        System.out.print("Select a field (");
-        Field[] fields = Contact.class.getDeclaredFields();
+    private static Object[] getFieldInput(Class<?> contactType) {
+        Field[] superFields = contactType.getSuperclass().getDeclaredFields();
+        Field[] fields = contactType.getDeclaredFields();
+
+        System.out.printf(
+            "Select a field (%s",
+            contactType == Person.class ?
+                    superFields[0].getName() + ", " :
+                    ""
+        );
         for(int i = 0; i < fields.length; i++)
             System.out.printf(
                     "%s%s",
                     fields[i].getName(),
-                    (i == fields.length - 1) ? "): " : ", "
+                    (i == fields.length - 1) ? "" : ", "
             );
+        System.out.printf(", %s): ", superFields[1].getName());
 
         String in = sc.nextLine();
         Field fieldInput = null;
+        Field[] allFields = Stream.concat(
+                Arrays.stream(superFields),
+                Arrays.stream(fields)
+        ).toArray(Field[]::new);
         while (fieldInput == null) {
-            for (Field field : fields)
+            for (Field field : allFields) {
+                if(contactType == Organization.class && field.getName().equals("name"))
+                    continue;
                 if(field.getName().equals(in.trim().toLowerCase()))
                     fieldInput = field;
+            }
             if(fieldInput == null) {
                 System.out.println("Enter valid field!");
                 in = sc.nextLine();
@@ -129,5 +205,24 @@ public class Main {
         String fieldValue = getStrInput();
 
         return new Object[]{fieldInput, fieldValue};
+    }
+
+    private static Class<?> getContactTypeInput() {
+        String personClassName = Person.class.getSimpleName().toLowerCase(),
+                orgClassName = Organization.class.getSimpleName().toLowerCase();
+        System.out.printf("Enter the type (%s, %s): ", personClassName, orgClassName);
+
+        String in = sc.nextLine();
+        while(true) {
+            in = in.trim().toLowerCase();
+            if(in.equals(personClassName))
+                return Person.class;
+            else if(in.equals(orgClassName))
+                return Organization.class;
+            else {
+                System.out.println("Enter valid contact type!");
+                in = sc.nextLine();
+            }
+        }
     }
 }

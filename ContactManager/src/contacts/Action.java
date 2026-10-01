@@ -5,7 +5,7 @@ enum Action {
     REMOVE,
     EDIT,
     COUNT,
-    LIST,
+    INFO,
     EXIT;
 
     @Override
