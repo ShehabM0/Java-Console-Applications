@@ -3,7 +3,10 @@ package client;
 import com.beust.jcommander.Parameter;
 
 public class Args {
-    @Parameter(names = {"-t", "--type"}, required = true)
+    @Parameter(names = {"-in", "--input"})
+    private String inputFile;
+
+    @Parameter(names = {"-t", "--type"})
     private String type;
 
     @Parameter(names = {"-k", "--key"}) // EXIT not req
@@ -11,6 +14,10 @@ public class Args {
 
     @Parameter(names = {"-v", "--value"}) // req only SET
     private String value;
+
+    public String getInputFile() {
+        return inputFile;
+    }
 
     public String getType() {
         return type;
