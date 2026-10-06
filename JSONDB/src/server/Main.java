@@ -1,21 +1,18 @@
 package server;
 
+import client.Request;
+import com.google.gson.Gson;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.InputMismatchException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main {
     private static final int PORT = 23456;
-    private static final int N = 1000;
-    private static final String[] db = new String[N];
-
-    static {
-        Arrays.fill(db, "");
-    }
+    private static final Map<String, String> db = new HashMap<>();
 
     public static void main(String[] args) {
         try(ServerSocket server = new ServerSocket(PORT)) {
@@ -28,34 +25,30 @@ public class Main {
                         DataInputStream input = new DataInputStream(socket.getInputStream());
                         DataOutputStream output = new DataOutputStream(socket.getOutputStream())
                 ) {
-                    String req = input.readUTF();
+                    String json = input.readUTF();
 
-                    String[] reqBody = split(req);
-                    Operation operation = parseOperation(reqBody[0]);
-                    Integer idx = null;
-                    String val = null;
+                    Request req = new Gson().fromJson(json, Request.class);
+                    Operation operation = parseOperation(req.getType());
+                    String key = req.getKey(), val = req.getValue();
 
+                    Response res;
                     if (operation == null) {
-                        output.writeUTF("ERROR");
+                        res = new Response(
+                                "ERROR",
+                                null,
+                                "Enter valid operation type!"
+                        );
+                        output.writeUTF(new Gson().toJson(res));
                         continue;
                     }
-                    if (operation != Operation.EXIT) {
-                        idx = parseIndex(reqBody[1]) - 1;
-                        if(!validateIdx(idx)) {
-                            output.writeUTF("ERROR");
-                            continue;
-                        }
-                    }
-                    if(operation == Operation.SET)
-                        val = reqBody[2];
 
-                    String res = switch (operation) {
-                        case SET -> set(idx, val);
-                        case GET -> get(idx);
-                        case DELETE -> delete(idx);
-                        case EXIT -> "OK";
+                    res = switch (operation) {
+                        case SET -> set(key, val);
+                        case GET -> get(key);
+                        case DELETE -> delete(key);
+                        case EXIT -> new Response("OK");
                     };
-                    output.writeUTF(res);
+                    output.writeUTF(new Gson().toJson(res));
 
                     if (operation == Operation.EXIT)
                         running = false;
@@ -66,55 +59,32 @@ public class Main {
         }
     }
 
-    static String[] split(String s) {
-        int n = s.length();
-        StringBuilder str = new StringBuilder();
-        String[] res = new String[3];
-        int k = 0;
-        for(int i = 0; i < n; i++)
-            if(k < 2 && s.charAt(i) == ' ') {
-                res[k++] = str.toString();
-                str.setLength(0);
-            } else {
-                str.append(s.charAt(i));
-            }
-        res[k] = str.toString();
-        return res;
+    static Response set(String key, String val) {
+        db.put(key, val);
+        return new Response("OK");
     }
 
-    static String set(int idx, String val) {
-        if(!validateIdx(idx))
-            return "ERROR";
+    static Response get(String key) {
+        if (!db.containsKey(key))
+            return new Response(
+                    "ERROR",
+                    null,
+                    "No such key"
+            );
 
-        db[idx] = val;
-        return "OK";
+        return new Response("OK", db.get(key));
     }
 
-    static String get(int idx) {
-        if(!validateIdx(idx) || db[idx].isBlank())
-            return "ERROR";
+    static Response delete(String key) {
+        if (!db.containsKey(key))
+            return new Response(
+                    "ERROR",
+                    null,
+                    "No such key"
+            );
 
-        return db[idx];
-    }
-
-    static String delete(int idx) {
-        if(!validateIdx(idx))
-            return "ERROR";
-
-        db[idx] = "";
-        return "OK";
-    }
-
-    static boolean validateIdx(int idx) {
-        return idx > -1 && idx < N;
-    }
-
-    static int parseIndex(String index) {
-        try {
-            return Integer.parseInt(index);
-        } catch (InputMismatchException e) {
-            return -1;
-        }
+        db.remove(key);
+        return new Response("OK");
     }
 
     static Operation parseOperation(String operation) {

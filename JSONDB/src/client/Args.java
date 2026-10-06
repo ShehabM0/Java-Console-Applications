@@ -6,21 +6,21 @@ public class Args {
     @Parameter(names = {"-t", "--type"}, required = true)
     private String type;
 
-    @Parameter(names = {"-i", "--index"}) // EXIT not req
-    private int index;
+    @Parameter(names = {"-k", "--key"}) // EXIT not req
+    private String key;
 
-    @Parameter(names = {"-m", "--message"}) // req only SET
-    private String message;
+    @Parameter(names = {"-v", "--value"}) // req only SET
+    private String value;
 
     public String getType() {
         return type;
     }
 
-    public int getIndex() {
-        return index;
+    public String getKey() {
+        return key;
     }
 
-    public String getMessage() {
-        return message;
+    public String getValue() {
+        return value;
     }
 }
