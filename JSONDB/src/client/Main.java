@@ -2,6 +2,7 @@ package client;
 
 import com.beust.jcommander.JCommander;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import common.FileManager;
 import common.Request;
 
@@ -9,6 +10,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class Main {
     private static final String SERVER_ADDRESS = "127.0.0.1";
@@ -36,7 +38,10 @@ public class Main {
                 req = FileManager.loadReq(FILE_PATH);
             } else {
                 String type = args.getType().trim().toLowerCase();
-                String key = args.getKey(), val = args.getValue();
+                ArrayList<String> keys = (ArrayList<String>) args.getKey();
+                String key = keys == null || keys.isEmpty() ? null : keys.get(0);
+                JsonElement val = args.getValue();
+
                 if(type.equals("exit"))
                     req = new Request(type);
                 else if(type.equals("set"))
@@ -52,7 +57,7 @@ public class Main {
             String res = input.readUTF();
             System.out.printf("Received: %s%n", res);
         } catch (IOException e) {
-             System.out.println("Client failed connecting to server! " + e);
+            System.out.println("Client failed connecting to server! " + e);
         }
     }
 }

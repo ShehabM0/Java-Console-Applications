@@ -1,6 +1,16 @@
 package client;
 
+import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+
+class JsonElementConverter implements IStringConverter<JsonElement> {
+    @Override
+    public JsonElement convert(String value) {
+        return new JsonPrimitive(value);
+    }
+}
 
 public class Args {
     @Parameter(names = {"-in", "--input"})
@@ -10,10 +20,10 @@ public class Args {
     private String type;
 
     @Parameter(names = {"-k", "--key"}) // EXIT not req
-    private String key;
+    private Object key; // String | Array
 
-    @Parameter(names = {"-v", "--value"}) // req only SET
-    private String value;
+    @Parameter(names = {"-v", "--value"}, converter = JsonElementConverter.class) // req only SET
+    private JsonElement value;
 
     public String getInputFile() {
         return inputFile;
@@ -23,11 +33,11 @@ public class Args {
         return type;
     }
 
-    public String getKey() {
+    public Object getKey() {
         return key;
     }
 
-    public String getValue() {
+    public JsonElement getValue() {
         return value;
     }
 }

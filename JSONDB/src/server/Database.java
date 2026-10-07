@@ -1,6 +1,9 @@
 package server;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import common.FileManager;
 import common.Request;
 import common.Response;
@@ -9,14 +12,15 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 class Database {
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final String DB_PATH = System.getProperty("user.dir") + "/src/server/data/" + "db.json";
-    private final Map<String, String> db;
+    private final JsonObject db;
 
     Database() {
         db = FileManager.loadDB(DB_PATH);
@@ -32,7 +36,8 @@ class Database {
 
             Request req = new Gson().fromJson(json, Request.class);
             Operation operation = parseOperation(req.getType());
-            String key = req.getKey(), val = req.getValue();
+            Object key = req.getKey();
+            JsonElement val = req.getValue();
 
             Response res;
             if (operation == null) {
@@ -51,7 +56,7 @@ class Database {
                 case DELETE -> delete(key);
                 case EXIT -> new Response("OK");
             };
-            output.writeUTF(new Gson().toJson(res));
+            output.writeUTF(gson.toJson(res));
 
             return operation == Operation.EXIT;
         } catch (IOException e) {
@@ -60,10 +65,24 @@ class Database {
         }
     }
 
-    private Response set(String key, String val) {
+    private Response set(Object key, JsonElement val) {
         lock.writeLock().lock();
         try {
-            db.put(key, val);
+            if (key instanceof String keyStr) {
+                db.add(keyStr, val);
+            } else { // Array
+                ArrayList<String> keys = (ArrayList<String>) key;
+                int n = keys.size();
+
+                JsonElement curr = db;
+                for (int i = 0; i < n - 1; i++) {
+                    JsonObject obj = curr.getAsJsonObject();
+                    if (!obj.has(keys.get(i)))
+                        obj.add(keys.get(i), new JsonObject());
+                    curr = obj.get(keys.get(i));
+                }
+                curr.getAsJsonObject().add(keys.get(n-1), val);
+            }
             FileManager.saveDB(DB_PATH, db);
             return new Response("OK");
         } finally {
@@ -71,33 +90,54 @@ class Database {
         }
     }
 
-    private Response get(String key) {
+    private Response get(Object key) {
         lock.readLock().lock();
         try {
-            if (!db.containsKey(key))
-                return new Response(
-                        "ERROR",
-                        null,
-                        "No such key"
-                );
+            if (key instanceof String keyStr) {
+                if (!db.has(keyStr))
+                    return new Response("ERROR", null, "No such key");
+                return new Response("OK", db.get(keyStr));
+            } else { // Array
+                ArrayList<String> keys = (ArrayList<String>) key;
 
-            return new Response("OK", db.get(key));
+                JsonElement curr = db;
+                for (String ikey : keys) {
+                    if (!curr.isJsonObject())
+                        return new Response("ERROR", null, "No such key");
+                    JsonObject obj = curr.getAsJsonObject();
+                    if (!obj.has(ikey))
+                        return new Response("ERROR", null, "No such key");
+                    curr = obj.get(ikey);
+                }
+                return new Response("OK", curr);
+            }
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    private Response delete(String key) {
+    private Response delete(Object key) {
         lock.writeLock().lock();
         try {
-            if (!db.containsKey(key))
-                return new Response(
-                        "ERROR",
-                        null,
-                        "No such key"
-                );
+            if (key instanceof String keyStr) {
+                if (!db.has(keyStr))
+                    return new Response("ERROR", null, "No such key");
+                db.remove(keyStr);
+            } else { // Array
+                ArrayList<String> keys = (ArrayList<String>) key;
+                int n = keys.size();
 
-            db.remove(key);
+                JsonElement curr = db;
+                for (int i = 0; i < n - 1; i++) {
+                    if (!curr.isJsonObject())
+                        return new Response("ERROR", null, "No such key");
+                    JsonObject obj = curr.getAsJsonObject();
+                    if (!obj.has(keys.get(i)))
+                        return new Response("ERROR", null, "No such key");
+                    curr = obj.get(keys.get(i));
+                }
+                curr.getAsJsonObject().remove(keys.get(n - 1));
+            }
             FileManager.saveDB(DB_PATH, db);
             return new Response("OK");
         } finally {
