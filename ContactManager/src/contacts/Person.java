@@ -21,4 +21,24 @@ class Person extends Contact {
     public String getGender() {
         return gender.isEmpty() ? "[no data]" : gender;
     }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "Name: %s%n" +
+                        "Surname: %s%n" +
+                        "Birth date: %s%n" +
+                        "Gender: %s%n" +
+                        "Number: %s%n" +
+                        "Time created: %s%n" +
+                        "Time last edit: %s%n",
+                this.getName(),
+                this.getSurname(),
+                this.getBirth(),
+                this.getGender(),
+                this.getNumber(),
+                this.getCreatedAt(),
+                this.getUpdatedAt()
+        );
+    }
 }

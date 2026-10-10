@@ -2,10 +2,9 @@ package contacts;
 
 enum Action {
     ADD,
-    REMOVE,
-    EDIT,
+    LIST,
+    SEARCH,
     COUNT,
-    INFO,
     EXIT;
 
     @Override

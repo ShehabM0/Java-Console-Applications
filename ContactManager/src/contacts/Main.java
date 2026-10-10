@@ -2,21 +2,25 @@ package contacts;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class Main {
     private static final Scanner sc = new Scanner(System.in);
-    private static final ContactManager contactManager = new ContactManager();
+    private static ContactManager contactManager;
 
     public static void main(String[] args) {
+        String fileName = args.length > 0 ? args[0] : null;
+        contactManager = new ContactManager(fileName);
+
         Action action = getActionInput();
         while (action != Action.EXIT) {
             switch(action) {
                 case ADD -> handleContactAddition();
-                case REMOVE -> handleContactRemoval();
-                case EDIT -> handleContactUpdate();
-                case INFO -> handleContactListing();
+                case LIST -> handleContactListing();
+                case SEARCH -> handleContactSearch();
                 case COUNT -> contactManager.count();
             }
             System.out.println();
@@ -77,29 +81,11 @@ public class Main {
             contactManager.addOrg(name, number, address);
     }
 
-    private static void handleContactUpdate() {
-        if(contactManager.getCount() == 0) {
-            System.out.println("No records to edit!");
-            return;
-        }
-
-        int idx = getContactListIndex(false) - 1;
-        Class<?> contactType = contactManager.getContactType(idx);
-
-        Object[] pair = getFieldInput(contactType);
+    private static void handleContactUpdate(Contact contact, int idx) {
+        Object[] pair = getFieldInput(contact.getClass());
         Field field = (Field) pair[0];
         String fieldValue = pair[1].toString();
         contactManager.edit(idx, field, fieldValue);
-    }
-
-    private static void handleContactRemoval() {
-        if(contactManager.getCount() == 0) {
-            System.out.println("No records to remove!");
-            return;
-        }
-
-        int idx = getContactListIndex(false) - 1;
-        contactManager.remove(idx);
     }
 
     private static void handleContactListing() {
@@ -109,15 +95,83 @@ public class Main {
         }
 
         int idx = getContactListIndex(true) - 1;
-        contactManager.list(idx);
+        if(idx < 0)
+            return;
+        Contact contact = contactManager.getContact(idx);
+        handleRecordMenu(contact, idx);
+    }
+
+    private static void handleContactSearch() {
+        System.out.print("Enter search query: ");
+        String query = getStrInput();
+        List<Object[]> res = contactManager.search(query);
+        List<Contact> contacts = res.stream()
+                .map(pair -> (Contact) pair[0])
+                .toList();
+
+        System.out.printf("Found %d results:%n", res.size());
+        contactManager.displayContactsList(contacts);
+
+        System.out.println("\n[search] ");
+        System.out.print("Enter action ([number], back, again): ");
+        String searchAction = getSearchActionInput();
+
+        if(searchAction.equalsIgnoreCase("again"))
+            handleContactSearch();
+        if(searchAction.equalsIgnoreCase("back"))
+            return;
+        int contactListIdx = Integer.parseInt(searchAction);
+        while (contactListIdx < 1 || contactListIdx > res.size()) {
+            System.out.println("Enter valid list number!");
+            contactListIdx = getNumberInput();
+        }
+
+        Contact contact = (Contact) res.get(contactListIdx - 1)[0];
+        int contactIdx = (int) res.get(contactListIdx - 1)[1];
+        handleRecordMenu(contact, contactIdx);
+    }
+
+    private static void handleRecordMenu(Contact contact, int idx) {
+        System.out.println(contact);
+        System.out.print("[record] ");
+        System.out.print("Enter action (edit, delete, menu): ");
+        String recordMenuInput = getRecordMenuInput();
+        while(!recordMenuInput.equalsIgnoreCase("menu")) {
+            if(recordMenuInput.equalsIgnoreCase("delete")) {
+                contactManager.remove(idx);
+                return;
+            }
+            else {
+                handleContactUpdate(contact, idx);
+                System.out.println(contact);
+            }
+            System.out.print("[record] ");
+            System.out.print("Enter action (edit, delete, menu): ");
+            recordMenuInput = getRecordMenuInput();
+        }
+    }
+
+    private static String getRecordMenuInput() {
+        String in = getStrInput();
+        while (!in.equalsIgnoreCase("edit") &&
+                !in.equalsIgnoreCase("delete") &&
+                !in.equalsIgnoreCase("menu")) {
+            System.out.println("Enter valid record action!");
+            in = getStrInput();
+        }
+        return in;
     }
 
     private static int getContactListIndex(boolean isInfo) {
         contactManager.list();
+        System.out.println();
+        System.out.print("[list] ");
         System.out.print(
-                isInfo ? "Enter index to show info: " : "Select a record: "
+                isInfo ? "Enter action ([number], back): " : "Select a record: "
         );
-        String in = sc.nextLine();
+        String in = getStrInput();
+        if(in.equalsIgnoreCase("back"))
+            return -1;
         while (true) {
             try {
                 int idx = Integer.parseInt(in);
@@ -125,11 +179,11 @@ public class Main {
                     return idx;
                 else {
                     System.out.println("Enter valid number!");
-                    in = sc.nextLine();
+                    in = getStrInput();
                 }
             } catch (NumberFormatException _) {
                 System.out.println("Enter valid number!");
-                in = sc.nextLine();
+                in = getStrInput();
             }
         }
     }
@@ -143,7 +197,20 @@ public class Main {
         return in;
     }
 
+    private static int getNumberInput() {
+        String in = sc.nextLine();
+        while (true) {
+            try {
+                return Integer.parseInt(in);
+            } catch (NumberFormatException _) {
+                System.out.println("Enter valid number!");
+                in = sc.nextLine();
+            }
+        }
+    }
+
     private static Action getActionInput() {
+        System.out.print("[menu] ");
         System.out.print("Enter action (");
         for(Action action : Action.values()) {
             System.out.printf(
@@ -168,19 +235,14 @@ public class Main {
         Field[] superFields = contactType.getSuperclass().getDeclaredFields();
         Field[] fields = contactType.getDeclaredFields();
 
-        System.out.printf(
-            "Select a field (%s",
-            contactType == Person.class ?
-                    superFields[0].getName() + ", " :
-                    ""
-        );
+        System.out.printf("Select a field (%s",superFields[1].getName() + ", ");
         for(int i = 0; i < fields.length; i++)
             System.out.printf(
                     "%s%s",
                     fields[i].getName(),
                     (i == fields.length - 1) ? "" : ", "
             );
-        System.out.printf(", %s): ", superFields[1].getName());
+        System.out.printf(", %s): ", superFields[2].getName());
 
         String in = sc.nextLine();
         Field fieldInput = null;
@@ -190,8 +252,6 @@ public class Main {
         ).toArray(Field[]::new);
         while (fieldInput == null) {
             for (Field field : allFields) {
-                if(contactType == Organization.class && field.getName().equals("name"))
-                    continue;
                 if(field.getName().equals(in.trim().toLowerCase()))
                     fieldInput = field;
             }
@@ -205,6 +265,22 @@ public class Main {
         String fieldValue = getStrInput();
 
         return new Object[]{fieldInput, fieldValue};
+    }
+
+    private static String getSearchActionInput() {
+        String searchAction = getStrInput().trim();
+        while (true) {
+            if(searchAction.equalsIgnoreCase("back") ||
+                    searchAction.equalsIgnoreCase("again"))
+                return searchAction;
+            try {
+                Integer.parseInt(searchAction);
+                return searchAction;
+            } catch (NumberFormatException _) {
+                System.out.println("Enter valid search action!");
+                searchAction = getStrInput().trim();
+            }
+        }
     }
 
     private static Class<?> getContactTypeInput() {

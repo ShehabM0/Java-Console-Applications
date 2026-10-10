@@ -1,8 +1,13 @@
 package contacts;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-class Contact {
+class Contact implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private String name, number;
     private LocalDateTime createdAt, updatedAt;
 
