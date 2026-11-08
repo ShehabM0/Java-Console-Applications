@@ -28,3 +28,6 @@ bin/
 
 # Kotlin
 .kotlin
+
+# Db
+*.mv.db
